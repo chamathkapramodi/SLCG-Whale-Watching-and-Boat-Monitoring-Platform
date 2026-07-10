@@ -9,6 +9,7 @@ const galleryImages = [
 export default function Gallery() {
   return (
     <section 
+      id="gallery"
       className="w-full min-h-screen bg-white py-16 md:pt-28 md:pb-12 px-4 md:px-16 flex flex-col items-center justify-center"
       style={{ fontFamily: "'Montserrat', sans-serif" }}
     >

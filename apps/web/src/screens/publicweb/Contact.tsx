@@ -1,6 +1,7 @@
 export default function Contact() {
   return (
     <section 
+      id="contact"
       className="w-full min-h-screen py-20 px-4 flex items-center justify-center bg-cover bg-center"
       style={{ 
         backgroundImage: 'url("contact.png")', // Your main ocean image

@@ -1,6 +1,7 @@
 export default function About() {
   return (
     <section 
+      id="about"
       className="relative w-full bg-white overflow-hidden"
       style={{ fontFamily: "'Montserrat', sans-serif" }}
     >
