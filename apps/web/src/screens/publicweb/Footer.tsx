@@ -1,5 +1,3 @@
-import React from 'react';
-
 export default function Footer() {
   return (
     <footer className="w-full bg-[#0B213E] text-white py-16 px-6 md:px-16" style={{ fontFamily: "'Montserrat', sans-serif" }}>
@@ -66,3 +64,4 @@ export default function Footer() {
     </footer>
   );
 }
+

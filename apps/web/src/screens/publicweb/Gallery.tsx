@@ -1,5 +1,3 @@
-import React from 'react';
-
 const galleryImages = [
   { id: 1, src: '/gallery-1.jpg', alt: 'Whale breaching' },
   { id: 2, src: '/gallery-2.jpg', alt: 'Whale tail diving' },
