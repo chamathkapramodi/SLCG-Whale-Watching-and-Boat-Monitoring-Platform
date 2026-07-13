@@ -40,7 +40,7 @@ export default function Hero() {
             Browser, Making It Easy To Stay Connected And Continue Your<br className="hidden md:block" />
             Activities From Virtually Anywhere.
           </p>
-          <ShineButton text="Login to Web Portal" onClick={() => navigate('/login')} />
+          <ShineButton text="Login to Web Portal" onClick={() => navigate('/auth')} />
         </div>
 
       </div>
