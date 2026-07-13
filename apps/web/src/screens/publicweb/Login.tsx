@@ -1,9 +1,16 @@
 import React, { useState } from 'react';
 import { Icon } from '../../components/ui/icon';
-import ShineButton from '../../components/ShineButton';
+// Removed ShineButton import as requested
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
+
+  // This is where your actual login logic will go later
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log("Login submitted!");
+    // Add API call here
+  };
 
   return (
     <div 
@@ -14,12 +21,9 @@ const Login = () => {
         backgroundPosition: 'center',
       }}
     >
-      {/* Notice the change here: 'flex-col-reverse' is used instead of 'flex-col'.
-        This stacks the logo on top for mobile, while 'md:flex-row' keeps it on the right for desktop.
-      */}
       <div className="max-w-4xl w-full flex flex-col-reverse md:flex-row items-center justify-between gap-12 z-10">
         
-        {/* Left Column (Desktop) / Bottom Column (Mobile) - Login Form */}
+        {/* Left Column - Login Form */}
         <div className="w-full max-w-md flex flex-col">
           <h1 className="text-3xl md:text-4xl font-bold text-white mb-2 tracking-wide">
             Welcome Back!
@@ -28,7 +32,7 @@ const Login = () => {
             Continue Where You Left Off With Secure Account Access.
           </p>
 
-          <form className="w-full flex flex-col" onSubmit={(e) => e.preventDefault()}>
+          <form className="w-full flex flex-col" onSubmit={handleLogin}>
             {/* Email/Username Input */}
             <div className="mb-4">
               <input 
@@ -63,16 +67,25 @@ const Login = () => {
               </a>
             </div>
 
-            {/* Submit Button */}
-            <ShineButton
-              text="Sign Up"
-              className="w-full sm:w-44"
-              onClick={() => (window.location.href = "/signup")}
-            />
+            {/* Functional Login Button */}
+            <button
+              type="submit"
+              className="w-full sm:w-44 px-4 py-3 bg-teal-500 hover:bg-teal-600 text-white font-semibold rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-teal-400 focus:ring-offset-2 focus:ring-offset-gray-900 shadow-lg"
+            >
+              Login
+            </button>
+
+            {/* Optional: Sign Up Redirect */}
+            <p className="text-sm text-gray-400 mt-6">
+              Don't have an account?{' '}
+              <a href="/signup" className="text-teal-400 hover:text-teal-300 font-medium transition-colors">
+                Sign Up
+              </a>
+            </p>
           </form>
         </div>
 
-        {/* Right Column (Desktop) / Top Column (Mobile) - Logo */}
+        {/* Right Column - Logo */}
         <div className="w-full md:w-auto flex justify-center md:justify-end shrink-0">
           <div className="w-48 h-64 md:w-64 md:h-80 flex items-center justify-center">
             <img 
