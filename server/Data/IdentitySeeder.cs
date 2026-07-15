@@ -32,6 +32,11 @@ public sealed class IdentitySeeder(
             "IdentitySeed:OpsPassword",
             PortalRoles.Ops,
             "development OPS user");
+        await SeedPortalUserAsync(
+            "IdentitySeed:ShoreEmail",
+            "IdentitySeed:ShorePassword",
+            PortalRoles.ShoreCrew,
+            "development shore officer");
     }
 
     private async Task SeedPortalUserAsync(

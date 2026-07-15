@@ -15,7 +15,7 @@ const TripInfo = () => {
   return (
     <div className="min-h-screen bg-[#F8F9FB] font-[Poppins] text-[#14223D]">
       {/* Navigation Bar */}
-      <nav className="sticky top-0 z-50 bg-white shadow-sm">
+      <nav className="hidden" aria-hidden="true">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-8 py-5">
           <button
             type="button"

@@ -28,9 +28,15 @@ import OPSNotifications from './screens/OPS/OPSnotifications';
 import OPSSOS from './screens/OPS/OPSsos';
 import OPSTrips from './screens/OPS/OPStrips';
 import OPSTripdetails from './screens/OPS/OPSTripdetails';
+import AdminNavbar from './screens/Admin/components/AdminNavbar';
+import ShoreDashboard from './screens/Shore/ShoreDashboard';
+import ShoreTrips from './screens/Shore/ShoreTrips';
+import ShoreTripInfo from './screens/Shore/ShoreTripInfo';
+import ShoreNavbar from './screens/Shore/components/ShoreNavbar';
 
 const OPS_ROLES = ['OPS'] as const;
 const ADMIN_ROLES = ['Admin'] as const;
+const SHORE_ROLES = ['ShoreCrew'] as const;
 
 function PublicLandingPage() {
   return (
@@ -58,7 +64,21 @@ function OpsRoute({ children }: { children: ReactElement }) {
 function AdminRoute({ children }: { children: ReactElement }) {
   return (
     <ProtectedRoute allowedRoles={[...ADMIN_ROLES]}>
-      {children}
+      <div className="admin-portal min-h-screen overflow-x-hidden bg-[#f8f9fb] font-[Poppins] text-[#14223d]">
+        <AdminNavbar />
+        {children}
+      </div>
+    </ProtectedRoute>
+  );
+}
+
+function ShoreRoute({ children }: { children: ReactElement }) {
+  return (
+    <ProtectedRoute allowedRoles={[...SHORE_ROLES]}>
+      <div className="shore-portal min-h-screen overflow-x-hidden bg-[#f8f9fb] font-[Poppins] text-[#14223d]">
+        <ShoreNavbar />
+        {children}
+      </div>
     </ProtectedRoute>
   );
 }
@@ -91,6 +111,10 @@ export default function App() {
             <Route path="/ops/trips" element={<OpsRoute><OPSTrips /></OpsRoute>} />
             <Route path="/ops/trip-info/:tripId" element={<OpsRoute><OPSTripdetails /></OpsRoute>} />
             <Route path="/ops/notifications" element={<OpsRoute><OPSNotifications /></OpsRoute>} />
+
+            <Route path="/shore" element={<ShoreRoute><ShoreDashboard /></ShoreRoute>} />
+            <Route path="/shore/trips" element={<ShoreRoute><ShoreTrips /></ShoreRoute>} />
+            <Route path="/shore/trips/:tripId" element={<ShoreRoute><ShoreTripInfo /></ShoreRoute>} />
 
             <Route
               path="/access-denied"

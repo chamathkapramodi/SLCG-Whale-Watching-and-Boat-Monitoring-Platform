@@ -21,13 +21,23 @@ const Login = () => {
 
     try {
       const session = await login({ email: email.trim(), password });
-      if (!session.roles.includes('OPS')) {
-        navigate('/access-denied', { replace: true });
+      const requestedPath = (location.state as { from?: string } | null)?.from;
+      if (session.roles.includes('Admin')) {
+        navigate(requestedPath?.startsWith('/admin') ? requestedPath : '/admin', { replace: true });
         return;
       }
 
-      const requestedPath = (location.state as { from?: string } | null)?.from;
-      navigate(requestedPath?.startsWith('/ops') ? requestedPath : '/ops', { replace: true });
+      if (session.roles.includes('OPS')) {
+        navigate(requestedPath?.startsWith('/ops') ? requestedPath : '/ops', { replace: true });
+        return;
+      }
+
+      if (session.roles.includes('ShoreCrew')) {
+        navigate(requestedPath?.startsWith('/shore') ? requestedPath : '/shore', { replace: true });
+        return;
+      }
+
+      navigate('/access-denied', { replace: true });
     } catch (loginError) {
       setError(loginError instanceof AuthApiError
         ? loginError.message

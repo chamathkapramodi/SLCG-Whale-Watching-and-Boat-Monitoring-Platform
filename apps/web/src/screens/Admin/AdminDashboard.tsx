@@ -1,6 +1,5 @@
 import { useNavigate } from "react-router-dom";
 import { Icon } from "../../components/ui/icon";
-import AdminNavbar from "./components/AdminNavbar";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -15,9 +14,6 @@ const AdminDashboard = () => {
 
   return (
     <div className="min-h-screen bg-[#f8f9fb] font-[Poppins] text-slate-900">
-      {/* Admin Navbar */}
-      <AdminNavbar />
-
       {/* Dashboard Content */}
       <main className="mx-auto max-w-6xl px-8 py-12">
         <div className="grid gap-8 lg:grid-cols-[180px_1fr]">

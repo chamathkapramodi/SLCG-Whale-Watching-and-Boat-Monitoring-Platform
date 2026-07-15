@@ -5,7 +5,6 @@ import {
 } from "react";
 import type { ChangeEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import AdminNavbar from "./components/AdminNavbar";
 import { Icon } from "../../components/ui/icon";
 
 interface BoatOwner {
@@ -318,7 +317,6 @@ const ManageBoatOwners = () => {
 
   return (
     <div className="min-h-screen bg-[#f8f9fb] font-[Poppins] text-[#14223d]">
-      <AdminNavbar />
       <main className="mx-auto max-w-7xl px-6 py-10 lg:px-10">
         <section className="rounded-md bg-white px-6 py-8 shadow-[0_8px_30px_rgba(15,23,42,0.06)] md:px-10">
           <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">

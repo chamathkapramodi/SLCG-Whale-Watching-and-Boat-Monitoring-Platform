@@ -1,5 +1,4 @@
 import { useNavigate } from "react-router-dom";
-import AdminNavbar from "./components/AdminNavbar";
 import { Icon } from "../../components/ui/icon";
 
 const ManageUsers = () => {
@@ -15,8 +14,6 @@ const ManageUsers = () => {
 
   return (
     <div className="min-h-screen bg-[#f8f9fb] font-[Poppins] text-[#14223d]">
-      <AdminNavbar />
-
       {/* Page Content */}
       <main className="mx-auto max-w-6xl px-8 py-12">
         <div className="grid gap-8 lg:grid-cols-[180px_1fr]">
