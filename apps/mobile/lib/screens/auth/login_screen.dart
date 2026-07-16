@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import '../../../widgets/shared_widgets.dart';
+import '../../widgets/shared_widgets.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  const LoginScreen({Key? key}) : super(key: key);
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -17,7 +17,7 @@ class _LoginScreenState extends State<LoginScreen> {
     final password = _passwordController.text.trim();
 
     if (username == 'admin' && password == 'admin') {
-      Navigator.pushReplacementNamed(context, '/admin_dashboard');
+      Navigator.pushReplacementNamed(context, '/shore_dashboard'); // Redirect to Shore Dashboard
     } else if (username == 'owner' && password == 'owner') {
       Navigator.pushReplacementNamed(context, '/boat_owner');
     } else {

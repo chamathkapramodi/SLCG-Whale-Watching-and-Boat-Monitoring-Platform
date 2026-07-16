@@ -77,7 +77,7 @@ class VesselDetailsScreen extends StatelessWidget {
                     Row(
                       children: [
                         GestureDetector(
-                          onTap: () => Navigator.pushReplacementNamed(context, '/admin_dashboard'),
+                          onTap: () => Navigator.pushReplacementNamed(context, '/shore_dashboard'),
                           child: const Text("Home", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500)),
                         ),
                         const SizedBox(width: 24),

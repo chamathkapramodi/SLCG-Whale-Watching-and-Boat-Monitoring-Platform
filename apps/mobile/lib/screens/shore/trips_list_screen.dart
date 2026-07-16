@@ -87,7 +87,7 @@ class _TripsListScreenState extends State<TripsListScreen> {
                         const Icon(Icons.notifications_none, color: Color(0xFF152238)),
                         const SizedBox(width: 24),
                         GestureDetector(
-                          onTap: () => Navigator.pushReplacementNamed(context, '/admin_dashboard'),
+                          onTap: () => Navigator.pushReplacementNamed(context, '/shore_dashboard'),
                           child: const Text("Home", style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500)),
                         ),
                         const SizedBox(width: 24),

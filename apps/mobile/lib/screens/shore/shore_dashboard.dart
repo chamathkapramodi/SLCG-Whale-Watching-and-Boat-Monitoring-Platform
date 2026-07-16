@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-class AdminDashboard extends StatelessWidget {
-  const AdminDashboard({Key? key}) : super(key: key);
+class ShoreDashboard extends StatelessWidget {
+  const ShoreDashboard({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -118,9 +118,10 @@ class AdminDashboard extends StatelessWidget {
                               const SizedBox(height: 8),
                               const Text("Upcoming trip records.", style: TextStyle(color: Colors.grey)),
                               const SizedBox(height: 24),
-                              _buildTripListItem("Yet to be approved", Colors.redAccent),
+                              // Added context here to enable navigation
+                              _buildTripListItem(context, "Yet to be approved", Colors.redAccent),
                               const SizedBox(height: 16),
-                              _buildTripListItem("Approved", Colors.green),
+                              _buildTripListItem(context, "Approved", Colors.green),
                             ],
                           ),
                         ),
@@ -136,7 +137,8 @@ class AdminDashboard extends StatelessWidget {
     );
   }
 
-  Widget _buildTripListItem(String statusText, Color statusColor) {
+  // Added BuildContext requirement and GestureDetector wrapper
+  Widget _buildTripListItem(BuildContext context, String statusText, Color statusColor) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(color: const Color(0xFFF8FAFC), borderRadius: BorderRadius.circular(12)),
@@ -156,10 +158,14 @@ class AdminDashboard extends StatelessWidget {
               ],
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(border: Border.all(color: const Color(0xFF152238)), borderRadius: BorderRadius.circular(20)),
-            child: const Text("Info", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF152238))),
+          // Wrapped the visual button in a GestureDetector to make it functional
+          GestureDetector(
+            onTap: () => Navigator.pushNamed(context, '/vessel_details'),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(border: Border.all(color: const Color(0xFF152238)), borderRadius: BorderRadius.circular(20)),
+              child: const Text("Info", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF152238))),
+            ),
           )
         ],
       ),

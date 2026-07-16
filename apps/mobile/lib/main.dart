@@ -5,10 +5,10 @@ import 'screens/auth/welcome_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/auth/signup_step1.dart';
 
-// --- ADMIN SCREENS ---
-import 'screens/admin/admin_dashboard.dart';
-import 'screens/admin/trips_list_screen.dart';
-import 'screens/admin/vessel_details_screen.dart';
+// --- SHORE SCREENS ---
+import 'screens/shore/shore_dashboard.dart';
+import 'screens/shore/trips_list_screen.dart';
+import 'screens/shore/vessel_details_screen.dart';
 
 // --- BOAT OWNER SCREENS ---
 import 'screens/owner/boat_owner_dashboard.dart';
@@ -42,9 +42,13 @@ class WwmsApp extends StatelessWidget {
         '/': (context) => const WelcomeScreen(),
         '/login': (context) => const LoginScreen(),
         '/signup_step1': (context) => const SignupStep1(),
-        '/admin_dashboard': (context) => const AdminDashboard(),
+        
+        // Shore Routes
+        '/shore_dashboard': (context) => const ShoreDashboard(),
         '/trips_list': (context) => const TripsListScreen(),
         '/vessel_details': (context) => const VesselDetailsScreen(),
+        
+        // Boat Owner Routes
         '/boat_owner': (context) => const BoatOwnerDashboard(),
         '/owner_profile': (context) => const OwnerProfileScreen(),
         '/owner_boats': (context) => const OwnerBoatsScreen(),
