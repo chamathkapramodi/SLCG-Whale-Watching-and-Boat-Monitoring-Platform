@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using WhaleWatching.Api.Auth.Dtos;
 using WhaleWatching.Api.Domain;
 
@@ -9,18 +10,39 @@ public sealed class AuthService(
     SignInManager<ApplicationUser> signInManager,
     IJwtTokenService jwtTokenService) : IAuthService
 {
-    public async Task<IdentityResult> RegisterPassengerAsync(
+    public async Task<IdentityResult> RegisterPublicPortalUserAsync(
         RegisterRequest request,
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
         var email = request.Email.Trim();
+        var role = request.Role.Trim();
+        var nicNumber = request.NicNumber.Trim().ToUpperInvariant();
+        if (role is not (PortalRoles.BoatOwner or PortalRoles.BoatCrew))
+        {
+            return IdentityResult.Failed(new IdentityError
+            {
+                Code = "InvalidPublicRole",
+                Description = "Only boat owner and boat crew accounts can be self-registered."
+            });
+        }
+        if (await userManager.Users.AnyAsync(user => user.NicNumber == nicNumber, cancellationToken))
+        {
+            return IdentityResult.Failed(new IdentityError
+            {
+                Code = "DuplicateNicNumber",
+                Description = "An account already exists for this NIC number."
+            });
+        }
         var user = new ApplicationUser
         {
             Id = Guid.NewGuid(),
-            UserName = email,
+            UserName = request.UserName.Trim(),
             Email = email,
-            EmailConfirmed = false
+            EmailConfirmed = true,
+            DisplayName = request.DisplayName.Trim(),
+            NicNumber = nicNumber,
+            PhoneNumber = request.PhoneNumber.Trim()
         };
 
         var createResult = await userManager.CreateAsync(user, request.Password);
@@ -29,7 +51,7 @@ public sealed class AuthService(
             return createResult;
         }
 
-        var roleResult = await userManager.AddToRoleAsync(user, PortalRoles.Passenger);
+        var roleResult = await userManager.AddToRoleAsync(user, role);
         if (!roleResult.Succeeded)
         {
             await userManager.DeleteAsync(user);

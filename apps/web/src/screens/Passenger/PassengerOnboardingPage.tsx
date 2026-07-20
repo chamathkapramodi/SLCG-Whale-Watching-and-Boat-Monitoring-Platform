@@ -12,6 +12,7 @@ import {
 } from "./store/passengerStorage";
 import type { PassengerData } from "./store/passenger";
 import PassengerSOSButton from "./components/PassengerSOSButton";
+import { registerTripPassenger } from "./passengerTripApi";
 
 const whaleBackground = "/Hero.png";
 const slcgLogo = "/SLCGicon.png";
@@ -94,6 +95,7 @@ function PassengerOnboardingPage() {
     useState<FamilyFormData>(EMPTY_FAMILY_FORM);
 
   const [familyError, setFamilyError] = useState("");
+  const [savingFamily, setSavingFamily] = useState(false);
 
   useEffect(() => {
     if (passengers.length === 0) {
@@ -152,9 +154,9 @@ function PassengerOnboardingPage() {
     setFamilyError("");
   };
 
-  const handleFamilySubmit = (
+  const handleFamilySubmit = async (
     event: FormEvent<HTMLFormElement>,
-  ): void => {
+  ): Promise<void> => {
     event.preventDefault();
 
     const cleanName = familyForm.name.trim();
@@ -176,19 +178,35 @@ function PassengerOnboardingPage() {
       return;
     }
 
-    const updatedPassengers = addPassenger({
+    const companion = {
       name: cleanName,
       identificationNumber: cleanIdentification,
       phoneNumber: cleanPhoneNumber,
       passengerType: familyForm.passengerType,
       gender: familyForm.gender,
       ageCategory: familyForm.ageCategory,
-    });
+    };
 
-    setPassengers(updatedPassengers);
-    setFamilyForm(EMPTY_FAMILY_FORM);
-    setFamilyError("");
-    setShowFamilyModal(false);
+    const invitationCode = sessionStorage.getItem("wwms.passenger.tripInvitation");
+    if (!invitationCode) {
+      setFamilyError("Trip information is missing. Please scan the trip QR code again.");
+      return;
+    }
+
+    try {
+      setSavingFamily(true);
+      setFamilyError("");
+      await registerTripPassenger(invitationCode, companion);
+      const updatedPassengers = addPassenger(companion);
+
+      setPassengers(updatedPassengers);
+      setFamilyForm(EMPTY_FAMILY_FORM);
+      setShowFamilyModal(false);
+    } catch (companionError) {
+      setFamilyError(companionError instanceof Error ? companionError.message : "Unable to add this travel companion.");
+    } finally {
+      setSavingFamily(false);
+    }
   };
 
   const handleFileChange = (
@@ -664,8 +682,9 @@ function PassengerOnboardingPage() {
               <button
                 className="relative flex min-h-11 w-full items-center justify-center rounded-xl border-0 bg-black px-5 py-3 font-poppins text-sm font-medium text-white shadow-sm transition hover:bg-slate-800 active:scale-[.99] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black"
                 type="submit"
+                disabled={savingFamily}
               >
-                <span>Submit</span>
+                <span>{savingFamily ? "Adding..." : "Submit"}</span>
 
                 <span
                   className="absolute right-5 grid h-5 w-5 place-items-center rounded-full border border-white/70 text-transparent"

@@ -6,6 +6,7 @@ public sealed class GpsTelemetry
     public required string DeviceId { get; set; }
     public decimal Latitude { get; set; }
     public decimal Longitude { get; set; }
+    public decimal? SpeedKnots { get; set; }
     public DateTimeOffset RecordedAtUtc { get; set; }
     public DateTimeOffset ReceivedAtUtc { get; set; }
 }

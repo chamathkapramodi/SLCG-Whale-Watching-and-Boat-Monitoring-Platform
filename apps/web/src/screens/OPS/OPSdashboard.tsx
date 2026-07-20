@@ -3,9 +3,13 @@ import Sidebar from './components/Sidebar';
 import { useDashboardStore } from './store/useDashboardStore';
 import Navbar from './components/Navbar';
 import {Icon} from '../../components/ui/icon';
+import { useAuth } from '../../auth/useAuth';
+import { useEffect } from 'react';
 
 export default function OPS() {
-  const { vessels, activeVesselId, setActiveVessel } = useDashboardStore();
+  const { vessels, activeVesselId, setActiveVessel, loadVessels } = useDashboardStore();
+  const { session } = useAuth();
+  useEffect(() => { if (session) void loadVessels(session.accessToken); }, [loadVessels, session]);
   const activeVessel = vessels.find(v => v.id === activeVesselId);
 
   return (

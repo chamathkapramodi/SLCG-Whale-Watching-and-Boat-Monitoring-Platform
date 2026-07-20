@@ -19,14 +19,14 @@ public sealed class AuthController(IAuthService authService) : ControllerBase
         RegisterRequest request,
         CancellationToken cancellationToken)
     {
-        var result = await authService.RegisterPassengerAsync(request, cancellationToken);
+        var result = await authService.RegisterPublicPortalUserAsync(request, cancellationToken);
         if (!result.Succeeded)
         {
             if (result.Errors.Any(error =>
                     error.Code is "DuplicateEmail" or "DuplicateUserName"))
             {
                 return Accepted(new RegisterResponse(
-                    "Registration accepted. Email confirmation is required before login."));
+                    "Registration accepted. You can now sign in."));
             }
 
             foreach (var error in result.Errors)
@@ -38,7 +38,7 @@ public sealed class AuthController(IAuthService authService) : ControllerBase
         }
 
         return Accepted(new RegisterResponse(
-            "Registration accepted. Email confirmation is required before login."));
+            "Registration accepted. You can now sign in."));
     }
 
     [HttpPost("login")]

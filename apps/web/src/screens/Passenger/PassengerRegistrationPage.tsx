@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { addPassenger } from "./store/passengerStorage";
+import { registerTripPassenger } from "./passengerTripApi";
 
 const whaleBackground = "/Hero.png";
 const slcgLogo = "/SLCGicon.png";
@@ -16,6 +17,8 @@ interface RegistrationFormData {
 
 function PassengerRegistrationPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const invitationCode = searchParams.get('trip') ?? sessionStorage.getItem('wwms.passenger.tripInvitation') ?? '';
 
   const [formData, setFormData] = useState<RegistrationFormData>({
     name: "",
@@ -27,6 +30,7 @@ function PassengerRegistrationPage() {
   });
 
   const [errorMessage, setErrorMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const updateField = <K extends keyof RegistrationFormData>(
     field: K,
@@ -40,7 +44,7 @@ function PassengerRegistrationPage() {
     setErrorMessage("");
   };
 
- const handleSubmit = (event: FormEvent<HTMLFormElement>): void => {
+ const handleSubmit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
   event.preventDefault();
 
   if (
@@ -56,17 +60,18 @@ function PassengerRegistrationPage() {
     setErrorMessage("Please enter a valid phone number.");
     return;
   }
+  if (!invitationCode) { setErrorMessage("Please scan a valid trip QR code before registering."); return; }
 
-  addPassenger({
-    name: formData.name.trim(),
-    identificationNumber: formData.identificationNumber.trim(),
-    phoneNumber: formData.phoneNumber.trim(),
-    passengerType: formData.passengerType,
-    gender: formData.gender,
-    ageCategory: formData.ageCategory,
-  });
-
-  navigate("/passenger/onboarding");
+  try {
+    setSubmitting(true); setErrorMessage("");
+    const details={name:formData.name.trim(),identificationNumber:formData.identificationNumber.trim(),phoneNumber:formData.phoneNumber.trim(),passengerType:formData.passengerType,gender:formData.gender,ageCategory:formData.ageCategory};
+    const registered=await registerTripPassenger(invitationCode,details);
+    sessionStorage.setItem('wwms.passenger.id',registered.id);
+    sessionStorage.setItem('wwms.passenger.sessionToken',registered.sessionToken);
+    addPassenger(details);
+    navigate("/passenger/onboarding");
+  } catch(error) { setErrorMessage(error instanceof Error?error.message:"Passenger registration failed."); }
+  finally { setSubmitting(false); }
 };
 
   return (
@@ -244,8 +249,8 @@ function PassengerRegistrationPage() {
               </p>
             )}
 
-            <button className="flex min-h-11 w-full items-center justify-center rounded-lg border-0 bg-[#5cefdc] px-4 py-3 font-poppins text-sm leading-[150%] font-medium text-black transition-[background-color,transform] duration-150 hover:bg-[#7bf5e5] active:scale-[.98] focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-white min-[1024px]:text-[clamp(14px,.9vw,18px)]" type="submit">
-              Continue
+            <button disabled={submitting} className="flex min-h-11 w-full items-center justify-center rounded-lg border-0 bg-[#5cefdc] px-4 py-3 font-poppins text-sm leading-[150%] font-medium text-black transition-[background-color,transform] duration-150 hover:bg-[#7bf5e5] active:scale-[.98] disabled:opacity-60 focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-white min-[1024px]:text-[clamp(14px,.9vw,18px)]" type="submit">
+              {submitting?'Registering...':'Continue'}
             </button>
           </form>
 

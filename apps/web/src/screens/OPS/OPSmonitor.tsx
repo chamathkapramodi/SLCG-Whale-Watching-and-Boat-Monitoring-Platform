@@ -2,10 +2,13 @@ import Navbar from './components/Navbar';
 import VesselMap from './components/VesselMap';
 import Sidebar from './components/Sidebar';
 import { useDashboardStore } from './store/useDashboardStore';
+import { useAuth } from '../../auth/useAuth';
+import { useEffect } from 'react';
 
 export default function OPSMonitor() {
-  const { vessels, activeVesselId, setActiveVessel } = useDashboardStore();
-  const activeVessel = vessels.find((vessel) => vessel.id === activeVesselId);
+  const { loadVessels } = useDashboardStore();
+  const { session } = useAuth();
+  useEffect(() => { if (session) void loadVessels(session.accessToken); }, [loadVessels, session]);
 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-[#F8F9FA] font-sans text-slate-800">

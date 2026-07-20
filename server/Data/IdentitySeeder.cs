@@ -45,17 +45,16 @@ public sealed class IdentitySeeder(
             "IdentitySeed:WildlifePassword",
             PortalRoles.Wildlife,
             "development wildlife authority user");
-        var owner = await SeedPortalUserAsync("IdentitySeed:OwnerEmail", "IdentitySeed:OwnerPassword",
+        await SeedPortalUserAsync("IdentitySeed:OwnerEmail", "IdentitySeed:OwnerPassword",
             PortalRoles.BoatOwner, "development boat owner", "Kamal Silva");
-        var crew = await SeedPortalUserAsync("IdentitySeed:CrewEmail", "IdentitySeed:CrewPassword",
+        await SeedPortalUserAsync("IdentitySeed:CrewEmail", "IdentitySeed:CrewPassword",
             PortalRoles.BoatCrew, "development boat crew member", "Nimal Perera");
         await SeedPortalUserAsync("IdentitySeed:PassengerEmail", "IdentitySeed:PassengerPassword",
             PortalRoles.Passenger, "development passenger", "Amara Fernando");
-        if (owner is not null && crew is not null) await SeedOperationsAsync(owner, crew);
-
         if (environment.IsDevelopment())
         {
             await SeedDemoAccountsAsync();
+            await SeedOperationsAsync();
         }
     }
 
@@ -136,38 +135,136 @@ public sealed class IdentitySeeder(
         }
     }
 
-    private async Task SeedOperationsAsync(ApplicationUser owner, ApplicationUser crew)
+    private async Task<ApplicationUser> SeedDataUserAsync(
+        string email, string displayName, string role, string password)
     {
-        if (await db.Boats.AnyAsync()) return;
-        var mirissa = new Boat
+        var user = await userManager.FindByEmailAsync(email);
+        if (user is null)
         {
-            Id = Guid.NewGuid(), OwnerId = owner.Id, Name = "Mirissa King",
-            RegistrationNumber = "SL-WB-2047", RegistrationDate = new DateOnly(2026, 6, 10),
-            HullNumber = "156466", LengthMeters = 25.7m, WidthMeters = 5.7m,
-            MaximumCapacity = 150, Approval = ApprovalStatus.Approved,
-            ImageUrl = "/gallery-2.jpg"
+            user = new ApplicationUser
+            {
+                Id = Guid.NewGuid(), UserName = email, Email = email, EmailConfirmed = true,
+                DisplayName = displayName
+            };
+            EnsureSucceeded(await userManager.CreateAsync(user, password), $"create seeded user '{email}'");
+        }
+        else if (user.DisplayName != displayName)
+        {
+            user.DisplayName = displayName;
+            EnsureSucceeded(await userManager.UpdateAsync(user), $"update seeded user '{email}'");
+        }
+        if (!await userManager.IsInRoleAsync(user, role))
+            EnsureSucceeded(await userManager.AddToRoleAsync(user, role), $"assign '{role}' to '{email}'");
+        return user;
+    }
+
+    private async Task SeedOperationsAsync()
+    {
+        var ownerPassword = configuration["IdentitySeed:OwnerPassword"] ?? "Owner#WWMS2026!Secure";
+        var crewPassword = configuration["IdentitySeed:CrewPassword"] ?? "Crew#WWMS2026!Secure";
+        var owners = new[]
+        {
+            await SeedDataUserAsync(configuration["IdentitySeed:OwnerEmail"] ?? "owner@wwms.test", "Kamal Silva", PortalRoles.BoatOwner, ownerPassword),
+            await SeedDataUserAsync("suresh.fernando@wwms.test", "Suresh Fernando", PortalRoles.BoatOwner, ownerPassword)
         };
-        var princess = new Boat
+        var crewSeed = new[]
         {
-            Id = Guid.NewGuid(), OwnerId = owner.Id, Name = "Sea Princess",
-            RegistrationNumber = "SL-WB-2038", RegistrationDate = new DateOnly(2026, 5, 18),
-            HullNumber = "156390", LengthMeters = 21.2m, WidthMeters = 4.8m,
-            MaximumCapacity = 90, Approval = ApprovalStatus.Approved,
-            ImageUrl = "/gallery-4.jpg"
+            (configuration["IdentitySeed:CrewEmail"] ?? "crew@wwms.test", "Nimal Perera", "Coxswain", 0),
+            ("amal.fernando@wwms.test", "Amal Fernando", "Life Saver", 0),
+            ("dinesh.kumara@wwms.test", "Dinesh Kumara", "Deck Hand", 0),
+            ("lahiru.jayasinghe@wwms.test", "Lahiru Jayasinghe", "Diver", 0),
+            ("pradeep.senanayake@wwms.test", "Pradeep Senanayake", "First Aid Officer", 0),
+            ("kasun.perera@wwms.test", "Kasun Perera", "Coxswain", 1),
+            ("chamara.silva@wwms.test", "Chamara Silva", "Life Saver", 1),
+            ("isuru.madushan@wwms.test", "Isuru Madushan", "Deck Hand", 1),
+            ("tharindu.bandara@wwms.test", "Tharindu Bandara", "Diver", 1),
+            ("ravindu.gamage@wwms.test", "Ravindu Gamage", "First Aid Officer", 1)
         };
-        db.Boats.AddRange(mirissa, princess);
-        db.CrewAssignments.Add(new CrewAssignment
+        var crewUsers = new List<(ApplicationUser User, string Position, int OwnerIndex)>();
+        foreach (var item in crewSeed)
         {
-            Id = Guid.NewGuid(), Boat = mirissa, CrewUserId = crew.Id,
-            Position = "Coxswain", IsActive = true
-        });
-        db.Trips.AddRange(
-            new Trip { Id = Guid.NewGuid(), Boat = mirissa, ScheduledDepartureUtc = DateTimeOffset.UtcNow.AddHours(18),
-                Route = "Mirissa – Dondra Head", PassengerCount = 28, Status = TripStatus.Scheduled,
-                ShoreApproval = ApprovalStatus.Pending, UpdatedAtUtc = DateTimeOffset.UtcNow },
-            new Trip { Id = Guid.NewGuid(), Boat = princess, ScheduledDepartureUtc = DateTimeOffset.UtcNow.AddDays(-1),
-                ActualDepartureUtc = DateTimeOffset.UtcNow.AddDays(-1), Route = "Mirissa – Weligama Bay", PassengerCount = 22,
-                Status = TripStatus.Completed, ShoreApproval = ApprovalStatus.Approved, UpdatedAtUtc = DateTimeOffset.UtcNow });
+            var crewUser = await SeedDataUserAsync(item.Item1, item.Item2, PortalRoles.BoatCrew, crewPassword);
+            if (!crewUser.IsCrewCertified) { crewUser.IsCrewCertified = true;
+                EnsureSucceeded(await userManager.UpdateAsync(crewUser), $"certify seeded crew '{crewUser.Email}'"); }
+            if (crewUser.CrewType != item.Item3) { crewUser.CrewType = item.Item3;
+                EnsureSucceeded(await userManager.UpdateAsync(crewUser), $"set crew type for '{crewUser.Email}'"); }
+            crewUsers.Add((crewUser, item.Item3, item.Item4));
+        }
+
+        var boatSeed = new[]
+        {
+            (owners[0], "Mirissa King", "SL-WB-2047", "156466", 25.7m, 5.7m, 150, "/gallery-2.jpg"),
+            (owners[0], "Sea Princess", "SL-WB-2038", "156390", 21.2m, 4.8m, 90, "/gallery-4.jpg"),
+            (owners[1], "Blue Horizon", "SL-WB-2112", "157012", 23.4m, 5.1m, 120, "/gallery-1.jpg"),
+            (owners[1], "Ocean Pearl", "SL-WB-2140", "157045", 19.8m, 4.5m, 80, "/gallery-5.jpg")
+        };
+        var boats = new List<Boat>();
+        foreach (var item in boatSeed)
+        {
+            var boat = await db.Boats.SingleOrDefaultAsync(x => x.RegistrationNumber == item.Item3);
+            if (boat is null)
+            {
+                boat = new Boat { Id = Guid.NewGuid(), RegistrationNumber = item.Item3 };
+                db.Boats.Add(boat);
+            }
+            boat.OwnerId = item.Item1.Id; boat.Name = item.Item2; boat.RegistrationDate = new DateOnly(2026, 6, 10);
+            boat.HullNumber = item.Item4; boat.LengthMeters = item.Item5; boat.WidthMeters = item.Item6;
+            boat.MaximumCapacity = item.Item7; boat.Approval = ApprovalStatus.Approved;
+            boat.WildlifeApproval = ApprovalStatus.Approved;
+            boat.MaximumSpeedKnots = 28 + boats.Count;
+            boat.LifeJacketCount = item.Item7 + 5; boat.GpsDeviceId = $"WWMS-{item.Item3}";
+            boat.ImageUrl = item.Item8;
+            boats.Add(boat);
+        }
+        await db.SaveChangesAsync();
+
+        for (var index = 0; index < crewUsers.Count; index++)
+        {
+            var member = crewUsers[index];
+            var ownerBoatOffset = member.OwnerIndex * 2;
+            var boat = boats[ownerBoatOffset + (index % 5 >= 3 ? 1 : 0)];
+            if (!await db.CrewAssignments.AnyAsync(x => x.BoatId == boat.Id && x.CrewUserId == member.User.Id))
+                db.CrewAssignments.Add(new CrewAssignment { Id = Guid.NewGuid(), BoatId = boat.Id,
+                    CrewUserId = member.User.Id, Position = member.Position, IsActive = true });
+        }
+        await db.SaveChangesAsync();
+
+        foreach (var member in crewUsers)
+        {
+            var owner = owners[member.OwnerIndex];
+            if (!await db.OwnerCrewMemberships.AnyAsync(x => x.OwnerId == owner.Id && x.CrewUserId == member.User.Id))
+                db.OwnerCrewMemberships.Add(new OwnerCrewMembership { Id = Guid.NewGuid(), OwnerId = owner.Id,
+                    CrewUserId = member.User.Id, AddedAtUtc = DateTimeOffset.UtcNow });
+        }
+        await db.SaveChangesAsync();
+
+        var now = DateTimeOffset.UtcNow;
+        foreach (var (boat, index) in boats.Select((boat, index) => (boat, index)))
+        {
+            if (await db.Trips.CountAsync(x => x.BoatId == boat.Id) >= 2) continue;
+            db.Trips.AddRange(
+                new Trip { Id = Guid.NewGuid(), BoatId = boat.Id, ScheduledDepartureUtc = now.AddHours(12 + index * 4),
+                    Route = index < 2 ? "Mirissa – Dondra Head" : "Galle – Unawatuna Bay", PassengerCount = 24 + index * 4,
+                    ChildrenCount = 3 + index, SpecialNeedsCount = index % 2,
+                    Status = TripStatus.Scheduled, ShoreApproval = ApprovalStatus.Approved, UpdatedAtUtc = now },
+                new Trip { Id = Guid.NewGuid(), BoatId = boat.Id, ScheduledDepartureUtc = now.AddDays(-2 - index),
+                    ActualDepartureUtc = now.AddDays(-2 - index), ActualArrivalUtc = now.AddDays(-2 - index).AddHours(4),
+                    Route = index < 2 ? "Mirissa – Weligama Bay" : "Galle – Jungle Beach", PassengerCount = 18 + index * 3,
+                    ChildrenCount = 2 + index, SpecialNeedsCount = index % 2,
+                    Status = TripStatus.Completed, ShoreApproval = ApprovalStatus.Approved, UpdatedAtUtc = now });
+        }
+        await db.SaveChangesAsync();
+
+        var coordinates = new[] { (5.942000m, 80.455000m), (5.935000m, 80.448000m),
+            (5.920000m, 80.430000m), (5.850000m, 80.460000m) };
+        foreach (var (boat, index) in boats.Select((boat, index) => (boat, index)))
+        {
+            if (boat.GpsDeviceId is null || await db.GpsTelemetry.AnyAsync(x => x.DeviceId == boat.GpsDeviceId)) continue;
+            db.GpsTelemetry.Add(new GpsTelemetry { DeviceId = boat.GpsDeviceId,
+                Latitude = coordinates[index].Item1, Longitude = coordinates[index].Item2,
+                SpeedKnots = 18 + index,
+                RecordedAtUtc = now, ReceivedAtUtc = now });
+        }
         await db.SaveChangesAsync();
     }
 

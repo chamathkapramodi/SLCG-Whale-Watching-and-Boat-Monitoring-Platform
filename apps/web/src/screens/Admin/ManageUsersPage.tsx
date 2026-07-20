@@ -1,8 +1,10 @@
 import { useNavigate } from "react-router-dom";
 import { Icon } from "../../components/ui/icon";
+import { useAdminRecords } from "./AdminRecordsContext";
 
 const ManageUsers = () => {
   const navigate = useNavigate();
+  const { owners, crew, boats } = useAdminRecords();
 
   const handleUsersClick = (): void => {
     navigate("/admin/select-users");
@@ -34,8 +36,8 @@ const ManageUsers = () => {
               </h2>
 
               <div className="mt-5 space-y-2 text-[11px]">
-                <p className="text-slate-400">99 New Users</p>
-                <p className="text-green-500">02 New Boats</p>
+                <p className="text-slate-400">{owners.length + crew.length} Registered Users</p>
+                <p className="text-green-500">{boats.length} Registered Boats</p>
               </div>
             </div>
           </aside>

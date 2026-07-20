@@ -1,28 +1,32 @@
 import { type FormEvent, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { findPassengerAndActivate } from "./store/passengerStorage";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { addPassenger } from "./store/passengerStorage";
+import { verifyReturningPassenger } from "./passengerTripApi";
 
 const whaleBackground = "/Hero.png";
 const slcgLogo = "/SLCGicon.png";
 
 function PassengerVerificationPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const invitationCode = searchParams.get('trip') ?? sessionStorage.getItem('wwms.passenger.tripInvitation') ?? '';
 
   const [nicNumber, setNicNumber] = useState("");
-  const [passportNumber, setPassportNumber] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const handleNicChange = (value: string): void => {
-    setNicNumber(value);
+    setNicNumber(value.toUpperCase());
     setErrorMessage("");
 
     if (value.trim() !== "") {
-      setPassportNumber("");
+      setPhoneNumber("");
     }
   };
 
-  const handlePassportChange = (value: string): void => {
-    setPassportNumber(value.toUpperCase());
+  const handlePhoneChange = (value: string): void => {
+    setPhoneNumber(value);
     setErrorMessage("");
 
     if (value.trim() !== "") {
@@ -30,23 +34,26 @@ function PassengerVerificationPage() {
     }
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>): void => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>): Promise<void> => {
     event.preventDefault();
 
     const cleanNic = nicNumber.trim();
-    const cleanPassport = passportNumber.trim();
+    const cleanPhone = phoneNumber.trim();
 
-    if (!cleanNic && !cleanPassport) {
-      setErrorMessage("Please enter your NIC or passport number.");
+    if (!cleanNic && !cleanPhone) {
+      setErrorMessage("Please enter your NIC/passport or phone number.");
       return;
     }
-
-    if (!findPassengerAndActivate(cleanNic || cleanPassport)) {
-      setErrorMessage("No passenger information was found for that identification number.");
-      return;
-    }
-
-    navigate("/passenger/onboarding");
+    if (!invitationCode) { setErrorMessage("Please scan a valid trip QR code first."); return; }
+    try {
+      setSubmitting(true); setErrorMessage("");
+      const passenger=await verifyReturningPassenger(invitationCode,cleanNic||cleanPhone);
+      sessionStorage.setItem('wwms.passenger.id',passenger.id);
+      sessionStorage.setItem('wwms.passenger.sessionToken',passenger.sessionToken);
+      addPassenger({name:passenger.name,identificationNumber:passenger.identificationNumber,phoneNumber:passenger.phoneNumber,passengerType:passenger.passengerType,gender:passenger.gender,ageCategory:passenger.ageCategory});
+      navigate("/passenger/onboarding");
+    } catch(error) { setErrorMessage(error instanceof Error?error.message:"Passenger verification failed."); }
+    finally { setSubmitting(false); }
   };
 
   return (
@@ -77,7 +84,7 @@ function PassengerVerificationPage() {
             noValidate
           >
             <div className="w-full">
-              <label className="mb-2 block text-center font-poppins text-[13px] leading-[150%] font-normal text-white min-[1024px]:text-[clamp(14px,0.9vw,18px)]" htmlFor="nicNumber">Enter Your NIC</label>
+              <label className="mb-2 block text-center font-poppins text-[13px] leading-[150%] font-normal text-white min-[1024px]:text-[clamp(14px,0.9vw,18px)]" htmlFor="nicNumber">Enter Your NIC or Passport</label>
 
               <input
                 id="nicNumber"
@@ -85,9 +92,9 @@ function PassengerVerificationPage() {
                 type="text"
                 value={nicNumber}
                 className="h-11 w-full rounded-lg border border-transparent bg-white px-3 font-poppins text-sm font-normal text-[#111] outline-none transition-[border-color,box-shadow] duration-150 placeholder:text-[#9b9b9b] focus:border-[#5cefdc] focus:shadow-[0_0_0_3px_rgba(92,239,220,.22)] min-[1024px]:text-[clamp(12px,0.78vw,16px)]"
-                placeholder="National Identity Card Number"
+                placeholder="NIC or Passport Number"
                 autoComplete="off"
-                maxLength={12}
+                maxLength={15}
                 onChange={(event) => handleNicChange(event.target.value)}
               />
             </div>
@@ -97,21 +104,21 @@ function PassengerVerificationPage() {
             </div>
 
             <div className="w-full">
-              <label className="sr-only" htmlFor="passportNumber">
-                Enter your passport number
+              <label className="sr-only" htmlFor="phoneNumber">
+                Enter your phone number
               </label>
 
               <input
-                id="passportNumber"
-                name="passportNumber"
-                type="text"
-                value={passportNumber}
+                id="phoneNumber"
+                name="phoneNumber"
+                type="tel"
+                value={phoneNumber}
                 className="h-11 w-full rounded-lg border border-transparent bg-white px-3 font-poppins text-sm font-normal text-[#111] outline-none transition-[border-color,box-shadow] duration-150 placeholder:text-[#9b9b9b] focus:border-[#5cefdc] focus:shadow-[0_0_0_3px_rgba(92,239,220,.22)] min-[1024px]:text-[clamp(12px,0.78vw,16px)]"
-                placeholder="Passport Number"
-                autoComplete="off"
+                placeholder="Phone Number"
+                autoComplete="tel"
                 maxLength={15}
                 onChange={(event) =>
-                  handlePassportChange(event.target.value)
+                  handlePhoneChange(event.target.value)
                 }
               />
             </div>
@@ -122,8 +129,8 @@ function PassengerVerificationPage() {
               </p>
             )}
 
-            <button className="mt-5 flex min-h-11 w-full items-center justify-center rounded-lg border-0 bg-[#5cefdc] px-4 py-3 font-poppins text-sm leading-[150%] font-medium text-black transition-[background-color,transform] duration-150 hover:bg-[#7bf5e5] active:scale-[.98] focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-white min-[1024px]:text-[clamp(14px,0.9vw,18px)]" type="submit">
-              Continue
+            <button disabled={submitting} className="mt-5 flex min-h-11 w-full items-center justify-center rounded-lg border-0 bg-[#5cefdc] px-4 py-3 font-poppins text-sm leading-[150%] font-medium text-black transition-[background-color,transform] duration-150 hover:bg-[#7bf5e5] active:scale-[.98] disabled:opacity-60 focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-white min-[1024px]:text-[clamp(14px,0.9vw,18px)]" type="submit">
+              {submitting?'Verifying...':'Continue'}
             </button>
           </form>
 
