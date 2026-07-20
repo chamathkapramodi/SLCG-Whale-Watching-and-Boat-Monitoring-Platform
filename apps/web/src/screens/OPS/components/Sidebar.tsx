@@ -3,6 +3,10 @@ import { useGSAP } from '@gsap/react';
 import gsap from 'gsap';
 import { useDashboardStore } from '../store/useDashboardStore';
 
+const formatTime = (value?: string) => value
+  ? new Intl.DateTimeFormat('en-LK', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }).format(new Date(value))
+  : 'TBA';
+
 export default function Sidebar() {
   const { activeVesselId, vessels, setActiveVessel } = useDashboardStore();
   const sidebarRef = useRef<HTMLDivElement>(null);
@@ -30,8 +34,8 @@ export default function Sidebar() {
              {/* Using a placeholder gradient to simulate the image fade */}
             <div className="absolute inset-0 bg-gradient-to-t from-white via-white/20 to-transparent z-10" />
             <img 
-              src="https://images.unsplash.com/photo-1544551763-46a013bb70d5?q=80&w=800&auto=format&fit=crop" 
-              alt="Vessel" 
+              src={selectedVessel.imageUrl || '/gallery-2.jpg'}
+              alt={selectedVessel.name}
               className="w-full h-full object-cover"
             />
           </div>
@@ -48,22 +52,37 @@ export default function Sidebar() {
             
             <div className="flex items-center gap-3 mt-1">
               <span className="text-xs text-slate-400 font-mono">{selectedVessel.regNo}</span>
-              <span className="text-xs text-emerald-500 font-medium tracking-wide">Approved</span>
+              <span className={`text-xs font-medium tracking-wide ${selectedVessel.fullyApproved ? 'text-emerald-500' : 'text-amber-500'}`}>
+                {selectedVessel.fullyApproved ? 'Fully approved' : 'Approval pending'}
+              </span>
+            </div>
+
+            <div className="mt-3 grid grid-cols-3 gap-2 text-center text-[10px]">
+              {[
+                ['Certified', selectedVessel.certificationApproval],
+                ['Wildlife', selectedVessel.wildlifeApproval],
+                ['Shore', selectedVessel.shoreApproval],
+              ].map(([label, value]) => (
+                <div key={label} className="rounded-lg bg-slate-50 px-2 py-2">
+                  <div className="font-semibold text-[#1A2B4C]">{label}</div>
+                  <div className={value === 'Approved' ? 'text-emerald-600' : value === 'Rejected' ? 'text-red-600' : 'text-amber-600'}>{value}</div>
+                </div>
+              ))}
             </div>
 
             {/* Quick Stats */}
             <div className="mt-6 space-y-2">
               <div className="grid grid-cols-[100px_1fr] text-sm">
                 <span className="font-bold text-[#1A2B4C]">Coordinates</span>
-                <span className="text-slate-600">5.949186, 80.438509</span>
+                <span className="text-slate-600">{selectedVessel.lat.toFixed(6)}, {selectedVessel.lon.toFixed(6)}</span>
               </div>
               <div className="grid grid-cols-[100px_1fr] text-sm">
                 <span className="font-bold text-[#1A2B4C]">Departure</span>
-                <span className="text-slate-600">06:32:11 Hrs</span>
+                <span className="text-slate-600">{formatTime(selectedVessel.departureUtc)}</span>
               </div>
               <div className="grid grid-cols-[100px_1fr] text-sm">
                 <span className="font-bold text-[#1A2B4C]">Arrival</span>
-                <span className="text-slate-600">DNA</span>
+                <span className="text-slate-600">{formatTime(selectedVessel.arrivalUtc)}</span>
               </div>
             </div>
 
@@ -75,12 +94,12 @@ export default function Sidebar() {
                 <h3 className="font-bold text-[#1A2B4C] mb-3">Vessel Information</h3>
                 <div className="space-y-2 text-sm">
                   {[
-                    ['Length', '12.8 M'],
-                    ['Beam (Width)', '3.9 M'],
-                    ['Cruising Speed', '20 Knots'],
-                    ['Maximum Speed', '28 Knots'],
-                    ['Maximum Capacity', '35 Passengers'],
-                    ['Life Jackets', '37'],
+                    ['Length', `${selectedVessel.lengthMeters} m`],
+                    ['Beam (Width)', `${selectedVessel.beamMeters} m`],
+                    ['Live Speed', selectedVessel.cruisingSpeedKnots == null ? 'No GPS reading' : `${selectedVessel.cruisingSpeedKnots} knots`],
+                    ['Maximum Speed', `${selectedVessel.maximumSpeedKnots} knots`],
+                    ['Maximum Capacity', `${selectedVessel.maximumCapacity} passengers`],
+                    ['Life Jackets', selectedVessel.lifeJacketCount.toString()],
                   ].map(([label, val]) => (
                     <div key={label} className="grid grid-cols-[140px_1fr]">
                       <span className="font-semibold text-[#1A2B4C]">{label}</span>
@@ -96,9 +115,9 @@ export default function Sidebar() {
                 <h3 className="font-bold text-[#1A2B4C] mb-3">Passenger Information</h3>
                 <div className="space-y-2 text-sm">
                   {[
-                    ['Passengers Onboard', '24'],
-                    ['Children Onboard', '03'],
-                    ['Special Needs', '00'],
+                    ['Passengers Onboard', selectedVessel.passengerCount.toString()],
+                    ['Children Onboard', selectedVessel.childrenCount.toString()],
+                    ['Special Needs', selectedVessel.specialNeedsCount.toString()],
                   ].map(([label, val]) => (
                     <div key={label} className="grid grid-cols-[140px_1fr]">
                       <span className="font-semibold text-[#1A2B4C]">{label}</span>
@@ -114,8 +133,9 @@ export default function Sidebar() {
                 <h3 className="font-bold text-[#1A2B4C] mb-3">Crew Information</h3>
                 <div className="space-y-2 text-sm">
                   {[
-                    ['Life Savers', '03'],
-                    ['Divers', '02'],
+                    ['Life Savers', selectedVessel.lifeSaverCount.toString()],
+                    ['Divers', selectedVessel.diverCount.toString()],
+                    ['Coxswains', selectedVessel.coxswainCount.toString()],
                   ].map(([label, val]) => (
                     <div key={label} className="grid grid-cols-[140px_1fr]">
                       <span className="font-semibold text-[#1A2B4C]">{label}</span>

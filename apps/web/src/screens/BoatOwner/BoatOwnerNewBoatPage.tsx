@@ -1,0 +1,816 @@
+import {
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+} from "react";
+import {
+  ArrowLeft,
+  Paperclip,
+  Trash2,
+  Upload,
+} from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../auth/useAuth";
+import { operationsApi } from "../../operations/operationsApi";
+
+interface BoatFormData {
+  name: string;
+  registrationNumber: string;
+  registrationDate: string;
+  maximumCapacity: string;
+  boatLength: string;
+  hullNumber: string;
+  boatWidth: string;
+  maximumSpeedKnots: string;
+  lifeJacketCount: string;
+}
+
+interface Certification {
+  id: string;
+  name: string;
+  fileName: string;
+  file?: File;
+}
+
+const initialCertifications: Certification[] = [
+  {
+    id: "sole-proprietorship",
+    name: "Certificate of registration of Sole Proprietorship",
+    fileName: "",
+  },
+  {
+    id: "me-certificate",
+    name: "ME Certificate",
+    fileName: "",
+  },
+  {
+    id: "vessel-certificate",
+    name: "Certificate of Vessel",
+    fileName: "",
+  },
+  {
+    id: "wildlife-certificate",
+    name: "Wildlife Certificate",
+    fileName: "",
+  },
+  {
+    id: "coxswain-certificate",
+    name: "Coxswain Certificate",
+    fileName: "",
+  },
+  {
+    id: "vessel-registration",
+    name: "Vessel Registration Certificate",
+    fileName: "",
+  },
+];
+
+function BoatOwnerNewBoatPage() {
+  const navigate = useNavigate();
+  const { session } = useAuth();
+
+  const [boatForm, setBoatForm] =
+    useState<BoatFormData>({
+      name: "Mirissa King",
+      registrationNumber: "SL-WB-0016",
+      registrationDate: "2026-06-10",
+      maximumCapacity: "150",
+      boatLength: "25.7",
+      hullNumber: "156466",
+      boatWidth: "5.7",
+      maximumSpeedKnots: "28",
+      lifeJacketCount: "155",
+    });
+
+  const [boatPhoto, setBoatPhoto] =
+    useState<File | null>(null);
+
+  const [boatPhotoPreview, setBoatPhotoPreview] =
+    useState("");
+
+  const [certifications, setCertifications] =
+    useState<Certification[]>(
+      initialCertifications,
+    );
+
+  const [statusMessage, setStatusMessage] =
+    useState("");
+
+  const updateFormField = (
+    field: keyof BoatFormData,
+    value: string,
+  ): void => {
+    setBoatForm((currentForm) => ({
+      ...currentForm,
+      [field]: value,
+    }));
+
+    setStatusMessage("");
+  };
+
+  const handleBoatPhotoChange = (
+    event: ChangeEvent<HTMLInputElement>,
+  ): void => {
+    const selectedFile =
+      event.target.files?.[0] ?? null;
+
+    if (!selectedFile) {
+      return;
+    }
+
+    setBoatPhoto(selectedFile);
+
+    const reader = new FileReader();
+
+    reader.onload = () => {
+      setBoatPhotoPreview(
+        typeof reader.result === "string"
+          ? reader.result
+          : "",
+      );
+    };
+
+    reader.readAsDataURL(selectedFile);
+    setStatusMessage("");
+  };
+
+  const handleCertificateChange = (
+    certificationId: string,
+    event: ChangeEvent<HTMLInputElement>,
+  ): void => {
+    const selectedFile =
+      event.target.files?.[0] ?? null;
+
+    if (!selectedFile) {
+      return;
+    }
+
+    setCertifications(
+      (currentCertifications) =>
+        currentCertifications.map(
+          (certification) =>
+            certification.id ===
+            certificationId
+              ? {
+                  ...certification,
+                  fileName: selectedFile.name,
+                  file: selectedFile,
+                }
+              : certification,
+        ),
+    );
+
+    setStatusMessage("");
+  };
+
+  const removeCertificate = (
+    certificationId: string,
+  ): void => {
+    setCertifications(
+      (currentCertifications) =>
+        currentCertifications.map(
+          (certification) =>
+            certification.id ===
+            certificationId
+              ? {
+                  ...certification,
+                  fileName: "",
+                  file: undefined,
+                }
+              : certification,
+        ),
+    );
+
+    setStatusMessage("");
+  };
+
+  const handleSaveDraft = (): void => {
+    /*
+     * Save the form as a draft in your backend
+     * or local storage here.
+     */
+
+    console.log("Boat draft:", {
+      boatForm,
+      boatPhoto,
+      certifications,
+    });
+
+    setStatusMessage(
+      "The boat information has been saved as a draft.",
+    );
+  };
+
+  const handleRequestApproval = async (
+    event: FormEvent<HTMLFormElement>,
+  ): Promise<void> => {
+    event.preventDefault();
+
+    if (!boatPhoto) {
+      setStatusMessage(
+        "Please upload a photograph of the boat.",
+      );
+      return;
+    }
+
+    if (!boatForm.name.trim()) {
+      setStatusMessage(
+        "Please enter the boat name.",
+      );
+      return;
+    }
+
+    if (!boatForm.registrationNumber.trim()) {
+      setStatusMessage(
+        "Please enter the registration number.",
+      );
+      return;
+    }
+
+    if (!boatForm.registrationDate) {
+      setStatusMessage(
+        "Please select the registration date.",
+      );
+      return;
+    }
+
+    if (!session) return;
+    try {
+      setStatusMessage("Submitting your boat approval request...");
+      const created = await operationsApi.createBoat(session.accessToken, {
+        name: boatForm.name, registrationNumber: boatForm.registrationNumber,
+        registrationDate: boatForm.registrationDate, hullNumber: boatForm.hullNumber,
+        lengthMeters: Number(boatForm.boatLength), widthMeters: Number(boatForm.boatWidth),
+        maximumCapacity: Number(boatForm.maximumCapacity), imageUrl: boatPhotoPreview || undefined,
+        maximumSpeedKnots: Number(boatForm.maximumSpeedKnots),
+        lifeJacketCount: Number(boatForm.lifeJacketCount),
+      });
+      await Promise.all(certifications.filter((certificate) => certificate.file).map((certificate) =>
+        operationsApi.uploadBoatDocument(session.accessToken, created.id, certificate.name, certificate.file!)));
+      setStatusMessage("Your boat approval request has been submitted successfully.");
+      navigate(`/owner/boats/${created.id}`);
+    } catch (error) {
+      setStatusMessage(error instanceof Error ? error.message : "Unable to submit the boat.");
+    }
+  };
+
+  return (
+    <main className="boat-owner-page min-h-dvh w-full overflow-x-hidden bg-white text-black">
+      <form
+        onSubmit={handleRequestApproval}
+        className="
+          mx-auto w-full max-w-[800px]
+          px-3 pb-6 pt-5
+          sm:px-8 sm:pb-10 sm:pt-7
+          lg:px-10 lg:pb-12
+        "
+      >
+        {/* Page header */}
+        <header className="relative flex min-h-12 items-center justify-center">
+          <button
+            type="button"
+            aria-label="Go back"
+            onClick={() => navigate(-1)}
+            className="
+              absolute left-0
+              flex h-10 w-10
+              items-center justify-center
+              rounded-full text-black
+              transition-colors hover:bg-gray-100
+              focus:outline-none
+              focus-visible:ring-2
+              focus-visible:ring-[#162d54]
+            "
+          >
+            <ArrowLeft
+              className="h-5 w-5 sm:h-6 sm:w-6"
+              strokeWidth={1.8}
+              aria-hidden="true"
+            />
+          </button>
+
+          <h1 className="text-[18px] font-semibold sm:text-[22px] lg:text-[25px]">
+            New Boat
+          </h1>
+        </header>
+
+        {/* Boat photograph */}
+        <section className="mt-3 sm:mt-5">
+          <label className="mb-2 block text-[14px] font-semibold sm:text-[15px]">
+            Photograph of the Boat
+          </label>
+
+          <label
+            htmlFor="boatPhotograph"
+            className="
+              relative flex h-[178px] w-full
+              cursor-pointer items-center
+              justify-center overflow-hidden
+              rounded-[20px]
+              bg-gradient-to-br
+              from-[#8fb3e5] to-[#bce8f4]
+              transition-opacity hover:opacity-95
+              focus-within:ring-2
+              focus-within:ring-[#162d54]
+              sm:h-[260px]
+              lg:h-[300px]
+            "
+          >
+            {boatPhotoPreview ? (
+              <>
+                <img
+                  src={boatPhotoPreview}
+                  alt="Selected boat"
+                  className="h-full w-full object-cover"
+                />
+
+                <span
+                  className="
+                    absolute bottom-3 right-3
+                    rounded-lg bg-black/60
+                    px-3 py-2 text-[11px]
+                    font-medium text-white
+                  "
+                >
+                  Change photo
+                </span>
+              </>
+            ) : (
+              <Paperclip
+                className="h-16 w-16 text-white sm:h-20 sm:w-20"
+                strokeWidth={2}
+                aria-hidden="true"
+              />
+            )}
+
+            <input
+              id="boatPhotograph"
+              type="file"
+              accept="image/*"
+              onChange={handleBoatPhotoChange}
+              className="sr-only"
+            />
+          </label>
+        </section>
+
+        {/* Boat name */}
+        <div className="mt-3">
+          <label
+            htmlFor="boatName"
+            className="mb-2 block text-[14px] font-semibold sm:text-[15px]"
+          >
+            Name
+          </label>
+
+          <input
+            id="boatName"
+            type="text"
+            value={boatForm.name}
+            placeholder="Enter the boat name"
+            onChange={(event) =>
+              updateFormField(
+                "name",
+                event.target.value,
+              )
+            }
+            className="
+              min-h-[48px] w-full
+              rounded-[12px] border
+              border-[#e8e2e2]
+              bg-white px-4
+              text-[14px] font-normal
+              text-[#555555]
+              outline-none
+              transition-colors
+              placeholder:text-[#adadad]
+              focus:border-[#162d54]
+              focus:ring-1
+              focus:ring-[#162d54]
+              sm:min-h-[54px] sm:text-[15px]
+            "
+          />
+        </div>
+
+        {/* Registration information */}
+        <div className="mt-3 grid grid-cols-2 gap-2 sm:gap-4">
+          <div>
+            <label
+              htmlFor="registrationNumber"
+              className="mb-2 block text-[13px] font-semibold sm:text-[15px]"
+            >
+              Registration No.
+            </label>
+
+            <input
+              id="registrationNumber"
+              type="text"
+              value={boatForm.registrationNumber}
+              placeholder="Registration number"
+              onChange={(event) =>
+                updateFormField(
+                  "registrationNumber",
+                  event.target.value,
+                )
+              }
+              className="
+                min-h-[54px] w-full
+                rounded-[12px] border
+                border-[#e8e2e2]
+                bg-white px-4
+                text-[14px] font-normal
+                text-[#555555]
+                outline-none
+                placeholder:text-[#adadad]
+                focus:border-[#162d54]
+                focus:ring-1
+                focus:ring-[#162d54]
+                sm:text-[15px]
+              "
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="registrationDate"
+              className="mb-2 block text-[13px] font-semibold sm:text-[15px]"
+            >
+              Registration Date
+            </label>
+
+            <input
+              id="registrationDate"
+              type="date"
+              value={boatForm.registrationDate}
+              onChange={(event) =>
+                updateFormField(
+                  "registrationDate",
+                  event.target.value,
+                )
+              }
+              className="
+                min-h-[54px] w-full
+                rounded-[12px] border
+                border-[#e8e2e2]
+                bg-white px-3
+                text-[13px] font-normal
+                text-[#777777]
+                outline-none
+                focus:border-[#162d54]
+                focus:ring-1
+                focus:ring-[#162d54]
+                sm:px-4 sm:text-[15px]
+              "
+            />
+          </div>
+        </div>
+
+        {/* Capacity and length */}
+        <div className="mt-3 grid grid-cols-2 gap-2 sm:gap-4">
+          <div>
+            <label
+              htmlFor="maximumCapacity"
+              className="mb-2 block text-[13px] font-semibold sm:text-[15px]"
+            >
+              Maximum Capacity
+            </label>
+
+            <input
+              id="maximumCapacity"
+              type="number"
+              min="1"
+              value={boatForm.maximumCapacity}
+              placeholder="Maximum capacity"
+              onChange={(event) =>
+                updateFormField(
+                  "maximumCapacity",
+                  event.target.value,
+                )
+              }
+              className="
+                min-h-[48px] w-full
+                rounded-[12px] border
+                border-[#e8e2e2]
+                bg-white px-4
+                text-[14px] text-[#555555]
+                outline-none
+                focus:border-[#162d54]
+                focus:ring-1
+                focus:ring-[#162d54]
+                sm:min-h-[54px] sm:text-[15px]
+              "
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="boatLength"
+              className="mb-2 block text-[13px] font-semibold sm:text-[15px]"
+            >
+              Boat Length
+            </label>
+
+            <div className="relative">
+              <input
+                id="boatLength"
+                type="number"
+                min="0"
+                step="0.1"
+                value={boatForm.boatLength}
+                placeholder="Boat length"
+                onChange={(event) =>
+                  updateFormField(
+                    "boatLength",
+                    event.target.value,
+                  )
+                }
+                className="
+                  min-h-[48px] w-full
+                  rounded-[12px] border
+                  border-[#e8e2e2]
+                  bg-white px-4 pr-9
+                  text-[14px] text-[#555555]
+                  outline-none
+                  focus:border-[#162d54]
+                  focus:ring-1
+                  focus:ring-[#162d54]
+                  sm:min-h-[54px] sm:text-[15px]
+                "
+              />
+
+              <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[13px] text-[#999999]">
+                m
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Hull and width */}
+        <div className="mt-3 grid grid-cols-2 gap-2 sm:gap-4">
+          <div>
+            <label
+              htmlFor="hullNumber"
+              className="mb-2 block text-[13px] font-semibold sm:text-[15px]"
+            >
+              Hull Number
+            </label>
+
+            <input
+              id="hullNumber"
+              type="text"
+              value={boatForm.hullNumber}
+              placeholder="Hull number"
+              onChange={(event) =>
+                updateFormField(
+                  "hullNumber",
+                  event.target.value,
+                )
+              }
+              className="
+                min-h-[48px] w-full
+                rounded-[12px] border
+                border-[#e8e2e2]
+                bg-white px-4
+                text-[14px] text-[#555555]
+                outline-none
+                focus:border-[#162d54]
+                focus:ring-1
+                focus:ring-[#162d54]
+                sm:min-h-[54px] sm:text-[15px]
+              "
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="boatWidth"
+              className="mb-2 block text-[13px] font-semibold sm:text-[15px]"
+            >
+              Boat Width
+            </label>
+
+            <div className="relative">
+              <input
+                id="boatWidth"
+                type="number"
+                min="0"
+                step="0.1"
+                value={boatForm.boatWidth}
+                placeholder="Boat width"
+                onChange={(event) =>
+                  updateFormField(
+                    "boatWidth",
+                    event.target.value,
+                  )
+                }
+                className="
+                  min-h-[48px] w-full
+                  rounded-[12px] border
+                  border-[#e8e2e2]
+                  bg-white px-4 pr-9
+                  text-[14px] text-[#555555]
+                  outline-none
+                  focus:border-[#162d54]
+                  focus:ring-1
+                  focus:ring-[#162d54]
+                  sm:min-h-[54px] sm:text-[15px]
+                "
+              />
+
+              <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[13px] text-[#999999]">
+                m
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Speed and safety details */}
+        <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-4">
+          {[
+            ["maximumSpeedKnots", "Maximum Speed", "knots", "0.1"],
+            ["lifeJacketCount", "Life Jackets", "", "1"],
+          ].map(([field, label, unit, step]) => (
+            <div key={field}>
+              <label htmlFor={field} className="mb-2 block text-[13px] font-semibold sm:text-[15px]">{label}</label>
+              <div className="relative">
+                <input id={field} type="number" min="0" step={step}
+                  value={boatForm[field as keyof BoatFormData]}
+                  onChange={(event) => updateFormField(field as keyof BoatFormData, event.target.value)}
+                  className="min-h-[48px] w-full rounded-[12px] border border-[#e8e2e2] bg-white px-4 pr-14 text-[14px] text-[#555] outline-none focus:border-[#162d54] focus:ring-1 focus:ring-[#162d54] sm:min-h-[54px] sm:text-[15px]" />
+                {unit && <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-[#999]">{unit}</span>}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Certifications */}
+        <section className="mt-3">
+          <h2 className="mb-2 text-[14px] font-semibold sm:text-[15px]">
+            Certifications
+          </h2>
+
+          <div
+            className="
+              rounded-[12px] border
+              border-[#e8e2e2]
+              px-3 py-3
+              sm:px-4 sm:py-4
+            "
+          >
+            <div className="flex flex-col gap-3">
+              {certifications.map(
+                (certification) => (
+                  <article
+                    key={certification.id}
+                    className="
+                      flex min-h-[64px]
+                      items-center justify-between
+                      gap-4 rounded-[12px]
+                      border border-[#e8e2e2]
+                      bg-white px-4 py-3
+                      sm:min-h-[72px]
+                    "
+                  >
+                    <div className="min-w-0">
+                      <h3 className="text-[14px] font-medium leading-[1.25] sm:text-[15px]">
+                        {certification.name}
+                      </h3>
+
+                      {certification.fileName && (
+                        <p className="mt-1 truncate text-[10px] font-normal text-[#999999] sm:text-[11px]">
+                          {
+                            certification.fileName
+                          }
+                        </p>
+                      )}
+                    </div>
+
+                    {certification.fileName ? (
+                      <button
+                        type="button"
+                        aria-label={`Remove ${certification.name}`}
+                        onClick={() =>
+                          removeCertificate(
+                            certification.id,
+                          )
+                        }
+                        className="
+                          flex h-9 w-9 shrink-0
+                          items-center justify-center
+                          rounded-full
+                          transition-colors
+                          hover:bg-red-50
+                          focus:outline-none
+                          focus-visible:ring-2
+                          focus-visible:ring-red-500
+                        "
+                      >
+                        <Trash2
+                          className="h-5 w-5"
+                          strokeWidth={1.8}
+                          aria-hidden="true"
+                        />
+                      </button>
+                    ) : (
+                      <label
+                        htmlFor={`certificate-${certification.id}`}
+                        className="
+                          flex h-9 w-9 shrink-0
+                          cursor-pointer
+                          items-center justify-center
+                          rounded-full
+                          transition-colors
+                          hover:bg-gray-100
+                          focus-within:ring-2
+                          focus-within:ring-[#162d54]
+                        "
+                      >
+                        <Upload
+                          className="h-5 w-5"
+                          strokeWidth={1.8}
+                          aria-hidden="true"
+                        />
+
+                        <input
+                          id={`certificate-${certification.id}`}
+                          type="file"
+                          accept=".pdf,.jpg,.jpeg,.png"
+                          onChange={(event) =>
+                            handleCertificateChange(
+                              certification.id,
+                              event,
+                            )
+                          }
+                          className="sr-only"
+                        />
+                      </label>
+                    )}
+                  </article>
+                ),
+              )}
+            </div>
+          </div>
+        </section>
+
+        {statusMessage && (
+          <p
+            role="status"
+            className="
+              mt-4 rounded-lg bg-gray-100
+              px-4 py-3 text-center
+              text-[12px] font-medium
+              text-[#162d54]
+              sm:text-[13px]
+            "
+          >
+            {statusMessage}
+          </p>
+        )}
+
+        {/* Form buttons */}
+        <div className="mt-6 flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={handleSaveDraft}
+            className="
+              min-h-[58px] w-full
+              rounded-[10px] border
+              border-[#080d68]
+              bg-white px-5 py-3
+              text-[14px] font-semibold
+              text-[#080d68]
+              transition-colors
+              hover:bg-[#f5f6ff]
+              focus:outline-none
+              focus-visible:ring-2
+              focus-visible:ring-[#080d68]
+              focus-visible:ring-offset-2
+            "
+          >
+            Save as Draft
+          </button>
+
+          <button
+            type="submit"
+            className="
+              min-h-[58px] w-full
+              rounded-[10px] bg-[#080d68]
+              px-5 py-3
+              text-[14px] font-semibold
+              text-white
+              transition-colors
+              hover:bg-[#121a83]
+              focus:outline-none
+              focus-visible:ring-2
+              focus-visible:ring-[#080d68]
+              focus-visible:ring-offset-2
+            "
+          >
+            Request Approval
+          </button>
+        </div>
+      </form>
+    </main>
+  );
+}
+
+export default BoatOwnerNewBoatPage;

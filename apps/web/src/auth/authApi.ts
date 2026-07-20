@@ -71,6 +71,20 @@ export async function login(credentials: LoginCredentials): Promise<AuthSession>
   return toSession(response);
 }
 
+export interface PublicRegistration {
+  userName: string;
+  displayName: string;
+  nicNumber: string;
+  email: string;
+  phoneNumber?: string;
+  password: string;
+  role: 'BoatOwner' | 'BoatCrew';
+}
+
+export async function register(details: PublicRegistration): Promise<{ message: string }> {
+  return post<{ message: string }>('/api/auth/register', details);
+}
+
 async function performRestore(): Promise<AuthSession | null> {
   const refreshToken = getRefreshToken();
   if (!refreshToken) return null;

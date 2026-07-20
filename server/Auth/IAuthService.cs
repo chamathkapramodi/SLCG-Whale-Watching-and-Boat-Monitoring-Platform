@@ -5,7 +5,7 @@ namespace WhaleWatching.Api.Auth;
 
 public interface IAuthService
 {
-    Task<IdentityResult> RegisterPassengerAsync(
+    Task<IdentityResult> RegisterPublicPortalUserAsync(
         RegisterRequest request,
         CancellationToken cancellationToken = default);
 

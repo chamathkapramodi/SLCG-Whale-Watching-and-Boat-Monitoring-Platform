@@ -2,13 +2,18 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
 import { Icon } from '../../components/ui/icon';
 import ShineButton from '../../components/ShineButton';
+import { useNavigate } from 'react-router-dom';
+import { register } from '../../auth/authApi';
 
 const SignUp = () => {
+  const navigate = useNavigate();
   const [step, setStep] = useState(1);
   
   const [formData, setFormData] = useState({
     role: '',
     username: '',
+    fullName: '',
+    nicNumber: '',
     email: '',
     phone: '',
     password: '',
@@ -17,6 +22,7 @@ const SignUp = () => {
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -28,10 +34,31 @@ const SignUp = () => {
   };
 
   // Fixed: Made the event parameter optional so ShineButton can call it safely
-  const handleFinalSubmit = (e?: React.FormEvent) => {
+  const handleFinalSubmit = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    console.log("Form Submitted:", formData);
-    // Add your API submission logic here
+    if (isSubmitting) return;
+    if (formData.password !== formData.confirmPassword) {
+      window.alert('Passwords do not match.');
+      return;
+    }
+    setIsSubmitting(true);
+    try {
+      await register({
+        userName: formData.username,
+        displayName: formData.fullName,
+        nicNumber: formData.nicNumber,
+        email: formData.email,
+        phoneNumber: formData.phone,
+        password: formData.password,
+        role: formData.role === 'Boat Owner' ? 'BoatOwner' : 'BoatCrew',
+      });
+      window.alert('Account created successfully. You can now sign in.');
+      navigate('/login', { replace: true });
+    } catch (error) {
+      window.alert(error instanceof Error ? error.message : 'Account creation failed.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const stepVariants: Variants = {
@@ -107,6 +134,27 @@ const SignUp = () => {
                   value={formData.username}
                   onChange={handleChange}
                   placeholder="Enter Username" 
+                  className="w-full px-4 py-3 rounded-md bg-white text-gray-900 placeholder-indigo-900/60 focus:outline-none focus:ring-2 focus:ring-teal-400 font-medium text-sm"
+                  required
+                />
+                <input
+                  type="text"
+                  name="fullName"
+                  value={formData.fullName}
+                  onChange={handleChange}
+                  placeholder="Enter Full Name"
+                  autoComplete="name"
+                  className="w-full px-4 py-3 rounded-md bg-white text-gray-900 placeholder-indigo-900/60 focus:outline-none focus:ring-2 focus:ring-teal-400 font-medium text-sm"
+                  required
+                />
+                <input
+                  type="text"
+                  name="nicNumber"
+                  value={formData.nicNumber}
+                  onChange={handleChange}
+                  placeholder="Enter NIC Number"
+                  autoComplete="off"
+                  pattern="([0-9]{9}[vVxX])|([0-9]{12})"
                   className="w-full px-4 py-3 rounded-md bg-white text-gray-900 placeholder-indigo-900/60 focus:outline-none focus:ring-2 focus:ring-teal-400 font-medium text-sm"
                   required
                 />
@@ -206,7 +254,7 @@ const SignUp = () => {
                   {/* Fixed: Wrapped the function call in an anonymous arrow function */}
                   <ShineButton
                     text="Create Account"
-                    onClick={() => handleFinalSubmit()}
+                    onClick={() => void handleFinalSubmit()}
                     className="w-full py-3"
                   />
                 </div>

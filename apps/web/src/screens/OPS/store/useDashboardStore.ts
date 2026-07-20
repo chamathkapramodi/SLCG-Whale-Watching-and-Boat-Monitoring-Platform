@@ -1,15 +1,35 @@
 import { create } from 'zustand';
+import { operationsApi } from '../../../operations/operationsApi';
 
 export interface Vessel {
   id: string;
   name: string;
-  type: string;     // Added for the sidebar
-  regNo: string;    // Added for the sidebar
+  regNo: string;
+  imageUrl?: string;
   lat: number;
   lon: number;
   heading: number; 
   color: string;
   status: 'active' | 'idle' | 'emergency';
+  certificationApproval: string;
+  wildlifeApproval: string;
+  shoreApproval: string;
+  fullyApproved: boolean;
+  coordinatesRecordedAtUtc?: string;
+  departureUtc?: string;
+  arrivalUtc?: string;
+  lengthMeters: number;
+  beamMeters: number;
+  cruisingSpeedKnots?: number;
+  maximumSpeedKnots: number;
+  maximumCapacity: number;
+  lifeJacketCount: number;
+  passengerCount: number;
+  childrenCount: number;
+  specialNeedsCount: number;
+  lifeSaverCount: number;
+  diverCount: number;
+  coxswainCount: number;
 }
 
 interface DashboardState {
@@ -17,20 +37,22 @@ interface DashboardState {
   vessels: Vessel[];
   setActiveVessel: (id: string | null) => void;
   setVessels: (vessels: Vessel[]) => void;
+  loadVessels: (token: string) => Promise<void>;
 }
 
 export const useDashboardStore = create<DashboardState>((set) => ({
   activeVesselId: null,
   
-  // Pre-fill the array with our responsive mock data instead of leaving it empty
-  vessels: [
-    // Real GPS coordinates near Mirissa Harbor and Whale Watching zones
-    { id: 'v1', name: 'FV Mirissa King', type: 'Fishing', regNo: 'SL-IVB-3047', lat: 5.942, lon: 80.455, heading: 45, color: '#FCD34D', status: 'active' },
-    { id: 'v2', name: 'WW Sea Princess', type: 'Whale Watching', regNo: 'SL-WW-1022', lat: 5.935, lon: 80.448, heading: 120, color: '#A855F7', status: 'active' },
-    { id: 'v3', name: 'MV Indo-Ceylon', type: 'Cargo', regNo: 'SL-CR-9941', lat: 5.920, lon: 80.430, heading: 270, color: '#94A3B8', status: 'idle' },
-    { id: 'v4', name: 'FV Ocean Harvest', type: 'Fishing', regNo: 'SL-IVB-8821', lat: 5.850, lon: 80.460, heading: 90, color: '#FCD34D', status: 'active' },
-  ],
+  vessels: [],
   
   setActiveVessel: (id) => set({ activeVesselId: id }),
   setVessels: (vessels) => set({ vessels }),
+  loadVessels: async (token) => {
+    const records = await operationsApi.vesselMap(token);
+    set({ vessels: records.filter((record) => record.latitude != null && record.longitude != null).map((record, index) => ({
+      ...record, regNo: record.registrationNumber, lat: record.latitude!, lon: record.longitude!,
+      heading: 0, color: record.fullyApproved ? '#10B981' : '#F59E0B',
+      status: record.departureUtc && !record.arrivalUtc ? 'active' : 'idle',
+    })) });
+  },
 }));

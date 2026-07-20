@@ -9,6 +9,7 @@ import {
   useNavigate,
 } from "react-router-dom";
 import { Icon } from "../../components/ui/icon";
+import { useOperations } from "../../operations/useOperations";
 
 type ApprovalStatus =
   | "Approved"
@@ -27,7 +28,7 @@ type SortOption =
   | "not-approved-first";
 
 interface ScheduledTrip {
-  id: number;
+  id: string;
   vesselName: string;
   owner: string;
   registrationNumber: string;
@@ -51,9 +52,10 @@ interface SpeechRecognitionEvent {
   results: SpeechRecognitionResultList;
 }
 
+/* Historical sample records removed: this screen is populated by the operations API. */
 const initialTrips: ScheduledTrip[] = [
   {
-    id: 1,
+    id: "1",
     vesselName: "FV Mirissa King",
     owner: "Nimal Perera",
     registrationNumber: "SL-WWB-2047",
@@ -61,7 +63,7 @@ const initialTrips: ScheduledTrip[] = [
     approval: "Approved",
   },
   {
-    id: 2,
+    id: "2",
     vesselName: "Blue Horizon",
     owner: "Kasun Silva",
     registrationNumber: "SL-WWB-2048",
@@ -69,7 +71,7 @@ const initialTrips: ScheduledTrip[] = [
     approval: "Approved",
   },
   {
-    id: 3,
+    id: "3",
     vesselName: "Sea Pearl",
     owner: "Amal Fernando",
     registrationNumber: "SL-WWB-2049",
@@ -77,7 +79,7 @@ const initialTrips: ScheduledTrip[] = [
     approval: "Not Approved",
   },
   {
-    id: 4,
+    id: "4",
     vesselName: "Marine Star",
     owner: "Dilan Kumara",
     registrationNumber: "SL-WWB-2050",
@@ -85,7 +87,7 @@ const initialTrips: ScheduledTrip[] = [
     approval: "Pending",
   },
   {
-    id: 5,
+    id: "5",
     vesselName: "Ocean Explorer",
     owner: "Ruwan Jayasinghe",
     registrationNumber: "SL-WWB-2051",
@@ -93,7 +95,7 @@ const initialTrips: ScheduledTrip[] = [
     approval: "Approved",
   },
   {
-    id: 6,
+    id: "6",
     vesselName: "Whale Seeker",
     owner: "Chaminda Silva",
     registrationNumber: "SL-WWB-2052",
@@ -101,7 +103,7 @@ const initialTrips: ScheduledTrip[] = [
     approval: "Pending",
   },
   {
-    id: 7,
+    id: "7",
     vesselName: "Southern Wave",
     owner: "Tharindu Fernando",
     registrationNumber: "SL-WWB-2053",
@@ -109,7 +111,7 @@ const initialTrips: ScheduledTrip[] = [
     approval: "Approved",
   },
   {
-    id: 8,
+    id: "8",
     vesselName: "Ocean Pearl",
     owner: "Kamal Perera",
     registrationNumber: "SL-WWB-2054",
@@ -117,7 +119,7 @@ const initialTrips: ScheduledTrip[] = [
     approval: "Not Approved",
   },
   {
-    id: 9,
+    id: "9",
     vesselName: "Sea Breeze",
     owner: "Sunil Kumara",
     registrationNumber: "SL-WWB-2055",
@@ -125,7 +127,7 @@ const initialTrips: ScheduledTrip[] = [
     approval: "Approved",
   },
   {
-    id: 10,
+    id: "10",
     vesselName: "Island Explorer",
     owner: "Nuwan Silva",
     registrationNumber: "SL-WWB-2056",
@@ -137,10 +139,25 @@ const initialTrips: ScheduledTrip[] = [
 const ITEMS_PER_PAGE = 4;
 
 const Trips = () => {
+  void initialTrips;
   const navigate = useNavigate();
+  const { trips: databaseTrips } = useOperations();
 
   const [trips, setTrips] =
-    useState<ScheduledTrip[]>(initialTrips);
+    useState<ScheduledTrip[]>([]);
+
+  useEffect(() => {
+    setTrips(databaseTrips.map((trip) => ({
+      id: trip.id,
+      vesselName: trip.vesselName,
+      owner: trip.ownerName,
+      registrationNumber: trip.registrationNumber,
+      scheduledDateTime: trip.scheduledDepartureUtc,
+      approval: trip.shoreApproval === "Rejected"
+        ? "Not Approved"
+        : trip.shoreApproval as ApprovalStatus,
+    })));
+  }, [databaseTrips]);
 
   const [searchValue, setSearchValue] =
     useState("");
@@ -353,13 +370,13 @@ const Trips = () => {
   };
 
   const handleTripInfo = (
-    tripId: number,
+    tripId: string,
   ): void => {
     navigate(`/admin/trip-info/${tripId}`);
   };
 
   const handleDeleteTrip = (
-    tripId: number,
+    tripId: string,
   ): void => {
     const selectedTrip = trips.find(
       (trip) => trip.id === tripId,

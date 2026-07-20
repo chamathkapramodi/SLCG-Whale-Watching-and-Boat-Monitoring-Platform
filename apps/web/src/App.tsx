@@ -1,4 +1,4 @@
-import { BrowserRouter, Link, Navigate, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Link, Navigate, Route, Routes, useParams } from 'react-router-dom';
 import type { ReactElement } from 'react';
 
 import { AuthProvider } from './auth/AuthContext';
@@ -40,15 +40,34 @@ import ShoreTrips from './screens/Shore/ShoreTrips';
 import ShoreTripInfo from './screens/Shore/ShoreTripInfo';
 import ShoreNavbar from './screens/Shore/components/ShoreNavbar';
 import PassengerLandingPage from './screens/Passenger/PassengerLandingPage';
+import PassengerTripLandingPage from './screens/Passenger/PassengerTripLandingPage';
 import PassengerVerificationPage from './screens/Passenger/PassengerVerificationPage';
 import PassengerRegistrationPage from './screens/Passenger/PassengerRegistrationPage';
 import PassengerOnboardingPage from './screens/Passenger/PassengerOnboardingPage';
 import WildlifeNavbar from './screens/Wildlife/WildlifeNavbar';
+import BoatCrewDashboard from './screens/BoatCrew/BoatCrewDashboard';
+import BoatCrewProfile from './screens/BoatCrew/BoatCrewProfile';
+import BoatCrewSettings from './screens/BoatCrew/BoatCrewSettings';
+import BoatCrewNotifications from './screens/BoatCrew/BoatCrewNotifications';
+import BoatCrewTripDetails from './screens/BoatCrew/BoatCrewTripDetails';
+import BoatCrewTrips from './screens/BoatCrew/BoatCrewTrips';
+import BoatOwnerDashboard from './screens/BoatOwner/BoatOwnerDashboard';
+import BoatOwnerProfilePage from './screens/BoatOwner/BoatOwnerProfilePage';
+import BoatOwnerBoatsPage from './screens/BoatOwner/BoatOwnerBoatsPage';
+import BoatOwnerBoatInfoPage from './screens/BoatOwner/BoatOwnerBoatInfoPage';
+import BoatOwnerNewBoatPage from './screens/BoatOwner/BoatOwnerNewBoatPage';
+import BoatOwnerCrewPage from './screens/BoatOwner/BoatOwnerCrewPage';
+import BoatOwnerTripsPage from './screens/BoatOwner/BoatOwnerTripsPage';
+import BoatOwnerTripInfoPage from './screens/BoatOwner/BoatOwnerTripInfoPage';
+import BoatOwnerNewTripPage from './screens/BoatOwner/BoatOwnerNewTripPage';
+import BoatOwnerSettingsPage from './screens/BoatOwner/BoatOwnerSettingsPage';
 
 const OPS_ROLES = ['OPS'] as const;
 const ADMIN_ROLES = ['Admin'] as const;
 const SHORE_ROLES = ['ShoreCrew'] as const;
 const WILDLIFE_ROLES = ['Wildlife'] as const;
+const OWNER_ROLES = ['BoatOwner'] as const;
+const CREW_ROLES = ['BoatCrew'] as const;
 
 function PublicLandingPage() {
   return (
@@ -101,6 +120,29 @@ function WildlifeRoute({ children }: { children: ReactElement }) {
   return <ProtectedRoute allowedRoles={[...WILDLIFE_ROLES]}><div className="wildlife-portal admin-portal min-h-screen bg-[#f8f9fb] font-[Poppins] text-[#14223d]"><WildlifeNavbar />{children}</div></ProtectedRoute>;
 }
 
+function OwnerRoute({ children }: { children: ReactElement }) {
+  return <ProtectedRoute allowedRoles={[...OWNER_ROLES]}>{children}</ProtectedRoute>;
+}
+function CrewRoute({ children }: { children: ReactElement }) {
+  return (
+    <ProtectedRoute allowedRoles={[...CREW_ROLES]}>
+      <div className="boat-crew-portal min-h-screen bg-[#1e1e1e] font-[Poppins]">
+        {children}
+      </div>
+    </ProtectedRoute>
+  );
+}
+
+function BoatCrewTripRedirect() {
+  const { tripId } = useParams();
+  return <Navigate to={`/crew/trip-info/${tripId ?? ''}`} replace />;
+}
+
+function LegacyBoatOwnerRedirect() {
+  const legacyPath = useParams()['*'];
+  return <Navigate to={legacyPath ? `/owner/${legacyPath}` : '/owner'} replace />;
+}
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -114,6 +156,7 @@ export default function App() {
             <Route path="/signup" element={<SignUp />} />
 
             <Route path="/passenger" element={<PassengerLandingPage />} />
+            <Route path="/passenger/trip/:invitationCode" element={<PassengerTripLandingPage />} />
             <Route path="/passenger/verification" element={<PassengerVerificationPage />} />
             <Route path="/passenger/register" element={<PassengerRegistrationPage />} />
             <Route path="/passenger/onboarding" element={<PassengerOnboardingPage />} />
@@ -149,6 +192,36 @@ export default function App() {
             <Route path="/shore" element={<ShoreRoute><ShoreDashboard /></ShoreRoute>} />
             <Route path="/shore/trips" element={<ShoreRoute><ShoreTrips /></ShoreRoute>} />
             <Route path="/shore/trips/:tripId" element={<ShoreRoute><ShoreTripInfo /></ShoreRoute>} />
+            <Route path="/owner" element={<OwnerRoute><BoatOwnerDashboard /></OwnerRoute>} />
+            <Route path="/owner/profile" element={<OwnerRoute><BoatOwnerProfilePage /></OwnerRoute>} />
+            <Route path="/owner/boats" element={<OwnerRoute><BoatOwnerBoatsPage /></OwnerRoute>} />
+            <Route path="/owner/boats/register" element={<OwnerRoute><BoatOwnerNewBoatPage /></OwnerRoute>} />
+            <Route path="/owner/boats/:boatId" element={<OwnerRoute><BoatOwnerBoatInfoPage /></OwnerRoute>} />
+            <Route path="/owner/boats/:boatId/certifications/:certificationId" element={<Navigate to="/owner/boats" replace />} />
+            <Route path="/owner/crew" element={<OwnerRoute><BoatOwnerCrewPage /></OwnerRoute>} />
+            <Route path="/owner/crew/add" element={<Navigate to="/owner/crew" replace />} />
+            <Route path="/owner/crew/:crewId" element={<Navigate to="/owner/crew" replace />} />
+            <Route path="/owner/trips" element={<OwnerRoute><BoatOwnerTripsPage /></OwnerRoute>} />
+            <Route path="/owner/trips/schedule" element={<OwnerRoute><BoatOwnerNewTripPage /></OwnerRoute>} />
+            <Route path="/owner/trips/:tripId" element={<OwnerRoute><BoatOwnerTripInfoPage /></OwnerRoute>} />
+            <Route path="/owner/settings" element={<OwnerRoute><BoatOwnerSettingsPage /></OwnerRoute>} />
+            <Route path="/owner/settings/password" element={<Navigate to="/owner/settings" replace />} />
+            <Route path="/owner/support" element={<Navigate to="/owner/settings" replace />} />
+            <Route path="/owner/notifications" element={<Navigate to="/owner" replace />} />
+            <Route path="/boat-owner/*" element={<LegacyBoatOwnerRedirect />} />
+            <Route path="/crew" element={<CrewRoute><BoatCrewDashboard /></CrewRoute>} />
+            <Route path="/crew/profile" element={<CrewRoute><BoatCrewProfile /></CrewRoute>} />
+            <Route path="/crew/trips" element={<CrewRoute><BoatCrewTrips /></CrewRoute>} />
+            <Route path="/crew/trip-info/:tripId" element={<CrewRoute><BoatCrewTripDetails /></CrewRoute>} />
+            <Route path="/crew/notifications" element={<CrewRoute><BoatCrewNotifications /></CrewRoute>} />
+            <Route path="/crew/settings" element={<CrewRoute><BoatCrewSettings /></CrewRoute>} />
+            <Route path="/boat-crew" element={<Navigate to="/crew" replace />} />
+            <Route path="/boat-crew/profile" element={<Navigate to="/crew/profile" replace />} />
+            <Route path="/boat-crew/my-trips" element={<Navigate to="/crew/trips" replace />} />
+            <Route path="/boat-crew/trips" element={<Navigate to="/crew/trips" replace />} />
+            <Route path="/boat-crew/trip-info/:tripId" element={<BoatCrewTripRedirect />} />
+            <Route path="/boat-crew/notifications" element={<Navigate to="/crew/notifications" replace />} />
+            <Route path="/boat-crew/settings" element={<Navigate to="/crew/settings" replace />} />
             <Route path="/wildlife" element={<WildlifeRoute><AdminDashboard /></WildlifeRoute>} />
             <Route path="/wildlife/manage-users" element={<WildlifeRoute><ManageUsers /></WildlifeRoute>} />
             <Route path="/wildlife/select-users" element={<WildlifeRoute><UserCategoriesPage /></WildlifeRoute>} />

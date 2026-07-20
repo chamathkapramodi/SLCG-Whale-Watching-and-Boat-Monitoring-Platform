@@ -1,10 +1,14 @@
 import { useNavigate } from "react-router-dom";
 import { Icon } from "../../components/ui/icon";
 import { useAuth } from "../../auth/useAuth";
+import { useOperations } from "../../operations/useOperations";
+import { useAdminRecords } from "./AdminRecordsContext";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const { session } = useAuth();
+  const { trips } = useOperations();
+  const { owners, crew, boats } = useAdminRecords();
   const isWildlife = session?.roles.includes("Wildlife") ?? false;
 
   const handleManageUsers = (): void => {
@@ -41,9 +45,9 @@ const AdminDashboard = () => {
               </h2>
 
               <div className="mt-5 space-y-2 text-xs">
-                <p className="text-slate-400">10 New Users</p>
-                <p className="text-green-500">78 New Trips</p>
-                <p className="text-slate-400">05 New Complaints</p>
+                <p className="text-slate-400">{owners.length + crew.length} Registered Users</p>
+                <p className="text-green-500">{trips.length} Trips</p>
+                <p className="text-slate-400">{boats.length} Registered Boats</p>
               </div>
             </div>
           </section>

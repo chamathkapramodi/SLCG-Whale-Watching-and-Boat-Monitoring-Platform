@@ -2,7 +2,7 @@ export type ApprovalStatus = "Pending" | "Approved" | "Declined";
 
 export interface TripRecord { id: number; date: string; route: string; passengers: number; status: "Completed" | "Scheduled"; }
 export interface OwnerRecord { id: number; name: string; nic: string; email: string; phone: string; address: string; boatIds: number[]; }
-export interface CrewRecord { id: number; name: string; nic: string; email: string; phone: string; address: string; role: "Captain" | "Life Saver" | "Deck Hand"; boatId?: number; approval: ApprovalStatus; declineReason?: string; certifications: string[]; tripIds: number[]; }
+export interface CrewRecord { id: number; name: string; nic: string; email: string; phone: string; address: string; role: "Captain" | "Coxswain" | "Life Saver" | "Deck Hand" | "Diver" | "First Aid Officer"; boatId?: number; approval: ApprovalStatus; declineReason?: string; certifications: string[]; tripIds: number[]; }
 export interface BoatRecord { id: number; name: string; registrationNumber: string; registrationDate: string; hullNumber: string; length: string; width: string; capacity: number; ownerId: number; crewIds: number[]; approval: ApprovalStatus; declineReason?: string; certifications: string[]; tripIds: number[]; }
 
 export const trips: TripRecord[] = [
